@@ -97,6 +97,10 @@ BOOST_AUTO_TEST_CASE(onioncat_test)
     BOOST_CHECK(addr1.IsTor());
     BOOST_CHECK(addr1.ToStringIP() == "5wyqrzbvrdsumnok.onion");
     BOOST_CHECK(addr1.IsRoutable());
+
+    CNetAddr addr3("abcdefghijklmnopqrstuvwxyz234567abcdefghijklmnopqrstuvwx.onion");
+    BOOST_CHECK(addr3.IsTor());
+    BOOST_CHECK(addr3.ToStringIP() == "abcdefghijklmnopqrstuvwxyz234567abcdefghijklmnopqrstuvwx.onion");
 }
 
 BOOST_AUTO_TEST_SUITE_END()

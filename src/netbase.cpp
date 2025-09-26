@@ -6,6 +6,7 @@
 #include "netbase.h"
 #include "util.h"
 #include "sync.h"
+#include "hash.h"
 
 #ifndef WIN32
 #include <sys/fcntl.h>
@@ -598,11 +599,15 @@ bool ConnectSocketByName(CService &addr, SOCKET& hSocketRet, const char *pszDest
 void CNetAddr::Init()
 {
     memset(ip, 0, sizeof(ip));
+    onionVersion = 0;
+    onionAddress.clear();
 }
 
 void CNetAddr::SetIP(const CNetAddr& ipIn)
 {
     memcpy(ip, ipIn.ip, sizeof(ip));
+    onionVersion = ipIn.onionVersion;
+    onionAddress = ipIn.onionAddress;
 }
 
 static const unsigned char pchOnionCat[] = {0xFD,0x87,0xD8,0x7E,0xEB,0x43};
@@ -610,13 +615,32 @@ static const unsigned char pchGarliCat[] = {0xFD,0x60,0xDB,0x4D,0xDD,0xB5};
 
 bool CNetAddr::SetSpecial(const std::string &strName)
 {
+    onionVersion = 0;
+    onionAddress.clear();
     if (strName.size()>6 && strName.substr(strName.size() - 6, 6) == ".onion") {
-        std::vector<unsigned char> vchAddr = DecodeBase32(strName.substr(0, strName.size() - 6).c_str());
-        if (vchAddr.size() != 16-sizeof(pchOnionCat))
-            return false;
+        std::string host = strName.substr(0, strName.size() - 6);
+        boost::to_lower(host);
         memcpy(ip, pchOnionCat, sizeof(pchOnionCat));
-        for (unsigned int i=0; i<16-sizeof(pchOnionCat); i++)
-            ip[i + sizeof(pchOnionCat)] = vchAddr[i];
+        onionAddress = host;
+        if (host.size() == 16) {
+            std::vector<unsigned char> vchAddr = DecodeBase32(host.c_str());
+            if (vchAddr.size() != 16-sizeof(pchOnionCat))
+                return false;
+            for (unsigned int i=0; i<16-sizeof(pchOnionCat); i++)
+                ip[i + sizeof(pchOnionCat)] = vchAddr[i];
+            onionVersion = 2;
+        } else if (host.size() == 56) {
+            std::vector<unsigned char> vchAddr = DecodeBase32(host.c_str());
+            if (vchAddr.size() != 35)
+                return false;
+            uint256 hash = Hash(host.begin(), host.end());
+            const unsigned char* hashBytes = hash.begin();
+            for (unsigned int i = 0; i < 16-sizeof(pchOnionCat); ++i)
+                ip[i + sizeof(pchOnionCat)] = hashBytes[i];
+            onionVersion = 3;
+        } else {
+            return false;
+        }
         return true;
     }
     if (strName.size()>11 && strName.substr(strName.size() - 11, 11) == ".oc.b32.i2p") {
@@ -638,6 +662,7 @@ CNetAddr::CNetAddr()
 
 CNetAddr::CNetAddr(const struct in_addr& ipv4Addr)
 {
+    Init();
     memcpy(ip,    pchIPv4, 12);
     memcpy(ip+12, &ipv4Addr, 4);
 }
@@ -645,6 +670,7 @@ CNetAddr::CNetAddr(const struct in_addr& ipv4Addr)
 #ifdef USE_IPV6
 CNetAddr::CNetAddr(const struct in6_addr& ipv6Addr)
 {
+    Init();
     memcpy(ip, &ipv6Addr, 16);
 }
 #endif
@@ -827,7 +853,7 @@ enum Network CNetAddr::GetNetwork() const
 std::string CNetAddr::ToStringIP() const
 {
     if (IsTor())
-        return EncodeBase32(&ip[6], 10) + ".onion";
+        return onionAddress.empty() ? EncodeBase32(&ip[6], 10) + ".onion" : onionAddress + ".onion";
     if (IsI2P())
         return EncodeBase32(&ip[6], 10) + ".oc.b32.i2p";
     CService serv(*this, 0);
@@ -965,7 +991,11 @@ std::vector<unsigned char> CNetAddr::GetGroup() const
 
 uint64_t CNetAddr::GetHash() const
 {
-    uint256 hash = Hash(&ip[0], &ip[16]);
+    uint256 hash;
+    if (IsTor() && !onionAddress.empty())
+        hash = Hash(onionAddress.begin(), onionAddress.end());
+    else
+        hash = Hash(&ip[0], &ip[16]);
     uint64_t nRet;
     memcpy(&nRet, &hash, sizeof(nRet));
     return nRet;

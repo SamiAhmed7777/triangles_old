@@ -6,6 +6,7 @@
 
 #include <string>
 #include <vector>
+#include <stdint.h>
 
 #include "serialize.h"
 #include "compat.h"
@@ -31,11 +32,15 @@ enum Network
 extern int nConnectTimeout;
 extern bool fNameLookup;
 
+static const int TORV3_ADDR_VERSION = 70205;
+
 /** IP address (IPv6, or IPv4 using mapped IPv6 range (::FFFF:0:0/96)) */
 class CNetAddr
 {
     protected:
         unsigned char ip[16]; // in network byte order
+        uint8_t onionVersion; // 0 when not a Tor endpoint
+        std::string onionAddress; // cached base32 string for Tor endpoints
 
     public:
         CNetAddr();
@@ -85,6 +90,13 @@ class CNetAddr
         IMPLEMENT_SERIALIZE
             (
              READWRITE(FLATDATA(ip));
+             if ((nType & SER_DISK) || (nType & SER_NETWORK && nVersion >= TORV3_ADDR_VERSION)) {
+                 READWRITE(onionVersion);
+                 READWRITE(onionAddress);
+             } else if (fRead) {
+                 onionVersion = 0;
+                 onionAddress.clear();
+             }
             )
 };
 
