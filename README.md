@@ -48,3 +48,24 @@ SOCKS5 connections through a Tor proxy without falling back to deprecated v2 ser
 With all peers upgraded to protocol 70205 or newer the network can operate entirely over Tor v3
 hidden services, avoiding the hard deprecation of Tor v2 onions.
 
+## Draft will helper script (Windows)
+
+For operators who want to prepare personal documentation alongside their node backups, the
+repository now includes a small PowerShell helper located at `contrib/will-template.ps1`. The script
+walks through common questions that appear in a simple last will and testament and writes the
+answers to a draft text file you can review with your legal counsel.
+
+### Running the script
+
+1. Open **PowerShell** on your Windows machine. If your execution policy blocks local scripts,
+   run `Set-ExecutionPolicy -Scope CurrentUser RemoteSigned` first.
+2. Clone or copy this repository so the script is available locally.
+3. From the repository root, execute:
+   ```powershell
+   cd .\contrib
+   .\will-template.ps1 -OutputPath C:\\Users\\$env:USERNAME\\Documents\\draft-will.txt
+   ```
+4. Answer the prompts. When finished, the draft will be saved to the path you supplied.
+5. Review the generated document with a licensed attorney to ensure it meets the legal
+   requirements of your jurisdiction before relying on it.
+
