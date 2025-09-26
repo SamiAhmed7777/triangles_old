@@ -30,10 +30,10 @@ static const int DATABASE_VERSION = 70509;
 // network protocol versioning
 //
 
-static const int PROTOCOL_VERSION = 70204;
+static const int PROTOCOL_VERSION = 70205;
 
 // earlier versions not supported as of Aug 2014, and are disconnected
-static const int MIN_PROTO_VERSION = 70204;
+static const int MIN_PROTO_VERSION = 70205;
 
 static const int INIT_PROTO_VERSION = 209;
 
@@ -43,7 +43,7 @@ static const int CADDR_TIME_VERSION = 70200;
 
 // only request blocks from nodes outside this range of versions
 static const int NOBLKS_VERSION_START = 0;
-static const int NOBLKS_VERSION_END = 70203;
+static const int NOBLKS_VERSION_END = 70204;
 
 // BIP 0031, pong message, is enabled for all versions AFTER this one
 static const int BIP0031_VERSION = 60000;
