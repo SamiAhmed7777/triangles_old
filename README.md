@@ -48,12 +48,6 @@ SOCKS5 connections through a Tor proxy without falling back to deprecated v2 ser
 With all peers upgraded to protocol 70205 or newer the network can operate entirely over Tor v3
 hidden services, avoiding the hard deprecation of Tor v2 onions.
 
-## Draft will helper script (Windows)
-
-For operators who want to prepare personal documentation alongside their node backups, the
-repository now includes a small PowerShell helper located at `contrib/will-template.ps1`. The script
-walks through common questions that appear in a simple last will and testament and writes the
-answers to a draft text file you can review with your legal counsel.
 
 ### Running the script
 
