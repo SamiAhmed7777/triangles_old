@@ -53,22 +53,26 @@ Licenses of statically linked libraries:
  Boost         MIT-like license
  miniupnpc     New (3-clause) BSD license
 
-Versions used in this release:
- GCC           4.3.3
- OpenSSL       1.0.2c
- Berkeley DB   5.1 (4.8.30.NC should work too)
- Boost         1.48
- miniupnpc     1.9
+Versions known to build successfully:
+ GCC           13.3 (Debian 12 / Ubuntu 24.04 toolchain)
+ OpenSSL       1.0.2u (system OpenSSL 3.x is not yet compatible; see notes below)
+ Berkeley DB   5.3.28.NC
+ Boost         1.83
+ miniupnpc     2.2.6
 
 Dependency Build Instructions: Ubuntu & Debian
 ----------------------------------------------
 sudo apt-get install build-essential
-sudo apt-get install libssl-dev
 sudo apt-get install libdb-dev
 sudo apt-get install libdb++-dev
-sudo apt-get install libboost1.48-all-dev
+sudo apt-get install libboost-all-dev
 sudo apt-get install libevent-dev
 sudo apt-get install libqrencode-dev
+
+# Ubuntu & Debian ship OpenSSL 3.x by default which is incompatible with this
+# code base.  Build OpenSSL 1.0.2u from source and point the build system at it
+# by exporting OPENSSL_INCLUDE_PATH and OPENSSL_LIB_PATH, or install a distro
+# compatibility package that still provides libssl1.0.x.
 
 If using Boost 1.37, append -mt to the boost libraries in the makefile.
 
@@ -93,6 +97,14 @@ Notes
 The release is built with GCC and then "strip trianglesd" to strip the debug
 symbols, which reduces the executable size by about 90%.
 
+Recent verification builds on Debian 12/Ubuntu 24.04 (GCC 13, Boost 1.83,
+Berkeley DB 5.3, miniupnpc 2.2.6) succeed until the OpenSSL link step.  The
+current code base expects the pre-1.1 OpenSSL API (direct access to EVP_CIPHER
+and DH structs) and therefore fails to compile with OpenSSL 3.x.  Building
+against OpenSSL 1.0.2u or LibreSSL 3.7 resolves the issue; when using a custom
+OpenSSL install, export OPENSSL_INCLUDE_PATH and OPENSSL_LIB_PATH before
+invoking make.
+
 
 miniupnpc
 ---------
@@ -112,10 +124,9 @@ make
 
 Boost
 -----
-If you need to build Boost yourself:
-sudo su
+If you need to build Boost yourself (1.83+ recommended):
 ./bootstrap.sh
-./bjam install
+./b2 link=static runtime-link=static install
 
 Libevent
 --------

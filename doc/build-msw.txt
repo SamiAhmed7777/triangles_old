@@ -7,93 +7,198 @@ cryptographic software written by Eric Young (eay@cryptsoft.com) and UPnP
 software written by Thomas Bernard.
 
 
-See readme-qt.rst for instructions on building Triangles QT, the
-graphical user interface.
+See readme-qt.rst for an end-to-end walkthrough of compiling the
+Triangles-Qt graphical wallet with Qt Creator.
 
 WINDOWS BUILD NOTES
 ===================
 
-Compilers Supported
+Recommended host setup (Windows 11)
+-----------------------------------
+
+The smoothest developer experience is obtained by combining the
+official Qt 5 MinGW toolchain with the MSYS2 userland:
+
+1. Install the latest **MSYS2** release from https://www.msys2.org/ and
+   launch the *MSYS2 MinGW x64* shell.
+2. Update the package database and base packages:
+
+       pacman -Syu
+       # Close the shell if prompted, then run again:
+       pacman -Syu
+
+3. Install the required build toolchain and libraries (this pulls in the
+   MinGW-w64 GCC 13 toolchain that matches the Qt 5.15 MinGW kit):
+
+       pacman -S --needed \
+         mingw-w64-x86_64-toolchain \
+         mingw-w64-x86_64-qt5 \
+         mingw-w64-x86_64-boost \
+         mingw-w64-x86_64-libevent \
+         mingw-w64-x86_64-miniupnpc \
+         mingw-w64-x86_64-db \
+         mingw-w64-x86_64-qrencode \
+         git make pkgconf
+
+4. Install **Qt 5.15.2** (the last LTS Qt 5 release) with the Qt
+   Maintenance Tool or the offline installer.  Include the
+   *"MinGW 64-bit"* component so that Qt Creator can reuse the same
+   compiler and debugger as MSYS2.
+5. Launch Qt Creator, add a new kit that points to the MSYS2 MinGW
+   compiler (typically `C:\\msys64\\mingw64\\bin\\g++.exe`) and Qt 5.15.2's
+   `qmake.exe` (`C:\\Qt\\5.15.2\\mingw81_64\\bin\\qmake.exe`).
+
+With that environment in place, the `triangles-qt.pro` project can be
+opened directly in Qt Creator and built without needing any extra
+Windows-specific patches or archives.
+
+If you prefer building from the command line, launch the *MSYS2 MinGW
+x64* shell and follow the *Manual build (MSYS2 MinGW shell)* section
+below.
+
+Dependency overview
 -------------------
-TODO: What works?
-Note: releases are cross-compiled using mingw running on Linux.
 
+The MSYS2 packages listed above cover every dependency required by
+`triangles-qt.pro` **except OpenSSL 1.0.x**.  Windows builds must still
+link against the pre-1.1 OpenSSL API because the wallet sources rely on
+deprecated structures that were removed in OpenSSL 1.1/3.0.  There are
+two supported options:
 
-Dependencies
-------------
-Libraries you need to download separately and build:
+* **LibreSSL 3.7+ (recommended)** – API-compatible with OpenSSL 1.0.2u
+  and readily available via the official Windows installers at
+  https://www.libressl.org/.
+* **OpenSSL 1.0.2u** – the final 1.0.x release; archived binaries are
+  still mirrored at https://wiki.openssl.org/index.php/Binaries.
 
-                default path               download
-OpenSSL         \openssl-1.0.1b-mgw        http://www.openssl.org/source/
-Berkeley DB     \db-4.8.30.NC-mgw          http://www.oracle.com/technology/software/products/berkeley-db/index.html
-Boost           \boost-1.47.0-mgw          http://www.boost.org/users/download/
-miniupnpc       \miniupnpc-1.6-mgw         http://miniupnp.tuxfamily.org/files/
+After installing either library, add its `bin` directory to your PATH in
+the *MSYS2 MinGW x64* shell before invoking `qmake`, or configure the Qt
+kit to add an *Environment* variable such as:
 
-Their licenses:
-OpenSSL        Old BSD license with the problematic advertising requirement
-Berkeley DB    New BSD license with additional requirement that linked software must be free open source
-Boost          MIT-like license
-miniupnpc      New (3-clause) BSD license
+    OPENSSL_ROOT_DIR=C:\\libressl
 
-Versions used in this release:
-OpenSSL      1.0.2c
-Berkeley DB  4.8.30.NC
-Boost        1.55.0
-miniupnpc    1.9
-libevent     2.0.21 stable
-leveldb	     1.2
+For Berkeley DB you may use the `mingw-w64-x86_64-db` package (5.3.28)
+or build 4.8.30.NC manually to maintain wallet file compatibility with
+older releases.  The *Manual build* section below details both flows.
 
+Summary of versions verified on Windows 11 (MSYS2 2024-07 snapshot):
 
-OpenSSL
--------
-MSYS shell:
-un-tar sources with MSYS 'tar xfz' to avoid issue with symlinks (OpenSSL ticket 2377)
-change 'MAKE' env. variable from 'C:\MinGW32\bin\mingw32-make.exe' to '/c/MinGW32/bin/mingw32-make.exe'
+    GCC / g++       13.2 (mingw-w64)
+    Qt              5.15.2 (MinGW 64-bit)
+    Boost           1.83 (MSYS2 package)
+    Berkeley DB     5.3.28 (MSYS2) or 4.8.30.NC (manual build)
+    OpenSSL         1.0.2u or LibreSSL 3.7.3
+    miniupnpc       2.2.6 (MSYS2)
+    libevent        2.1.12 (MSYS2)
+    qrencode        4.1.1 (MSYS2)
 
-cd /c/openssl-1.0.1h
-./config
-make
+Licenses:
 
-Berkeley DB
------------
-MSYS shell:
-cd /c/db-4.8.30.NC-mgw/build_unix
-sh ../dist/configure --enable-mingw --enable-cxx
-make
+    OpenSSL / LibreSSL  Original/modified BSD
+    Berkeley DB         New BSD license with additional "must remain open" clause
+    Boost               Boost Software License 1.0 (MIT-like)
+    miniupnpc           New (3-clause) BSD license
+    libevent            3-clause BSD license
+    qrencode            LGPLv2.1
 
-Boost
------
-DOS prompt:
-downloaded boost jam 3.1.18
-cd \boost-1.47.0-mgw
-bjam toolset=gcc --build-type=complete stage
+Manual build (MSYS2 MinGW shell)
+--------------------------------
 
-MiniUPnPc
----------
-UPnP support is optional, make with USE_UPNP= to disable it.
+All commands in this section assume you are running inside the
+`MSYS2 MinGW x64` shell (`C:\\msys64\\mingw64.exe`).  Paths use MSYS2
+style (e.g. `C:/` becomes `/c/`).
 
-MSYS shell:
-cd /c/miniupnpc-1.6-mgw
-make -f Makefile.mingw
-mkdir miniupnpc
-cp *.h miniupnpc/
+1. Clone the repository (if you have not already done so):
 
-Libevent
---------
-MSYS SHELL:
-tar xvzf ./libevent-2.0.21-stable.tar
-./configure --enable-static --disable-shared
-make
+       git clone https://github.com/triangles/triangles.git
+       cd triangles
 
-LevelDB (sources included in this release)
--------
-MSYS SHELL:
-cd src/leveldb
-TARGET_OS=NATIVE_WINDOWS make libleveldb.a libmemenv.a
+2. Ensure the LibreSSL/OpenSSL and Berkeley DB include/lib directories
+   are visible to the toolchain.  For example:
 
-triangles-qt.exe
-----------------
-DOS prompt:
-cd \triangles-master\src
-mingw32-make -f makefile.mingw
-strip trianglesd.exe
+       export OPENSSL_INCLUDE_PATH="/c/libressl/include"
+       export OPENSSL_LIB_PATH="/c/libressl/lib"
+
+   If you compiled Berkeley DB 4.8 yourself, also export:
+
+       export BDB_INCLUDE_PATH="/c/db-4.8.30.NC/build_unix"
+       export BDB_LIB_PATH="/c/db-4.8.30.NC/build_unix"
+
+   (The MSYS2 `mingw-w64-x86_64-db` package installs headers/libraries
+   into `/mingw64/include` and `/mingw64/lib`, so no extra exports are
+   required when using that package.)
+
+3. Generate the makefiles and build the Qt wallet:
+
+       /c/Qt/5.15.2/mingw81_64/bin/qmake.exe triangles-qt.pro \
+         OPENSSL_INCLUDE_PATH="$OPENSSL_INCLUDE_PATH" \
+         OPENSSL_LIB_PATH="$OPENSSL_LIB_PATH"
+       mingw32-make -j$(nproc)
+
+   The resulting binaries (`release/triangles-qt.exe` and
+   `release/trianglesd.exe`) will appear inside the `src` directory.
+
+4. (Optional) Strip the executables to reduce their size:
+
+       strip release/triangles-qt.exe release/trianglesd.exe
+
+5. Use `windeployqt` or Qt Creator's deploy step to bundle the Qt
+   runtime into a self-contained directory.
+
+Building Berkeley DB 4.8.30.NC
+------------------------------
+
+To preserve wallet file compatibility with historical releases you may
+prefer to link against Berkeley DB 4.8.  Download
+`db-4.8.30.NC.tar.gz` from Oracle's archive and unpack it somewhere such
+as `C:\\deps\\db-4.8.30.NC`.  Then run:
+
+    pacman -S --needed mingw-w64-x86_64-libtool
+    cd /c/deps/db-4.8.30.NC/build_unix
+    ../dist/configure --enable-mingw --enable-cxx \
+      --host=x86_64-w64-mingw32 --prefix=/mingw64
+    make -j$(nproc)
+    make install
+
+After the `make install` step the headers and libraries will be placed in
+`/mingw64/include/db4.8` and `/mingw64/lib`.  Set `BDB_LIB_SUFFIX=-4.8`
+when invoking `qmake` if you wish to link specifically against the 4.8
+libraries:
+
+    qmake triangles-qt.pro BDB_LIB_SUFFIX="-4.8"
+
+Qt Creator workflow
+-------------------
+
+1. Launch **Qt Creator** from the Qt 5.15 installation.
+2. Open `triangles-qt.pro` and choose the kit you configured earlier
+   (Qt 5.15.2 MinGW 64-bit + MSYS2 toolchain).
+3. In *Projects → Build Settings → Build Environment* add the same
+   `OPENSSL_INCLUDE_PATH`, `OPENSSL_LIB_PATH`, and optional `BDB_*`
+   variables used above.
+4. Configure *Build Steps → qmake* with additional arguments as needed,
+   for example:
+
+       OPENSSL_LIB_SUFFIX="" BDB_LIB_SUFFIX="-4.8"
+
+5. Trigger a build (Ctrl+B).  Qt Creator will run `qmake` and `mingw32-make`
+   behind the scenes and place the output under `build-*/release`.
+6. Run the wallet directly from Qt Creator or use the *Deploy* step to
+   call `windeployqt` and assemble a redistributable folder.
+
+Troubleshooting tips
+--------------------
+
+* **Unresolved OpenSSL symbols** – ensure that the `bin` directory for
+  LibreSSL/OpenSSL appears ahead of any system OpenSSL installations in
+  the PATH used by the build.
+* **Berkeley DB linkage errors** – if both 4.8 and 5.3 are installed,
+  pass `BDB_LIB_SUFFIX` explicitly to `qmake` so that the correct import
+  library is selected.
+* **Multiple Qt versions installed** – verify that Qt Creator’s kit is
+  pointing at the same `qmake.exe` you used on the command line.  Mixed
+  Qt 6/Qt 5 paths can lead to mysterious CMake errors when importing the
+  `.pro` file.
+* **Missing `libssp-0.dll` or `libwinpthread-1.dll`** – include the
+  corresponding runtime DLLs from `C:\\msys64\\mingw64\\bin` (or let
+  `windeployqt` gather them automatically) when packaging the wallet.

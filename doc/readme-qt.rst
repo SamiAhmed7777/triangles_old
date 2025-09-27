@@ -35,20 +35,60 @@ An executable named `triangles-qt` will be built.
 Windows
 --------
 
-Windows build instructions:
+The most reliable way to build Triangles-Qt on Windows 11 is to use the
+Qt 5.15.2 MinGW kit in tandem with MSYS2's MinGW-w64 packages.  The
+steps below mirror the workflow documented in ``doc/build-msw.txt`` and
+are summarised here for quick reference inside Qt Creator.
 
-- Download the `QT Windows SDK`_ and install it. You don't need the Symbian stuff, just the desktop Qt.
+1. Install `MSYS2 <https://www.msys2.org/>`_ and launch the **MSYS2 MinGW
+   x64** shell.
+2. Update the base system and install the toolchain packages:
 
-- Download and extract the `dependencies archive`_  [#]_, or compile openssl, boost and dbcxx yourself.
+   ::
 
-- Copy the contents of the folder "deps" to "X:\\QtSDK\\mingw", replace X:\\ with the location where you installed the Qt SDK. Make sure that the contents of "deps\\include" end up in the current "include" directory.
+        pacman -Syu
+        pacman -S --needed \
+            mingw-w64-x86_64-toolchain \
+            mingw-w64-x86_64-qt5 \
+            mingw-w64-x86_64-boost \
+            mingw-w64-x86_64-libevent \
+            mingw-w64-x86_64-miniupnpc \
+            mingw-w64-x86_64-db \
+            mingw-w64-x86_64-qrencode \
+            git make pkgconf
 
-- Open the .pro file in QT creator and build as normal (ctrl-B)
+3. Install Qt 5.15.2 (MinGW 64-bit component) with the Qt Maintenance
+   Tool or offline installer.  Configure a Qt Creator kit that uses:
 
-.. _`QT Windows SDK`: http://qt.nokia.com/downloads/sdk-windows-cpp
-.. _`dependencies archive`: https://download.visucore.com/triangles/qtgui_deps_1.zip
-.. [#] PGP signature: https://download.visucore.com/triangles/qtgui_deps_1.zip.sig (signed with RSA key ID `610945D0`_)
-.. _`610945D0`: http://pgp.mit.edu:11371/pks/lookup?op=get&search=0x610945D0
+   * ``C:\Qt\5.15.2\mingw81_64\bin\qmake.exe``
+   * ``C:\msys64\mingw64\bin\g++.exe`` and ``gdb.exe`` from the MSYS2
+     MinGW toolchain
+
+4. Obtain either LibreSSL 3.7+ or OpenSSL 1.0.2u for Windows.  Add its
+   ``bin`` directory to the kit's PATH (or set
+   ``OPENSSL_INCLUDE_PATH``/``OPENSSL_LIB_PATH`` environment variables)
+   so that qmake can discover the headers and libraries.
+5. (Optional) If you require Berkeley DB 4.8 for wallet compatibility,
+   build it following the instructions in ``doc/build-msw.txt`` and add the
+   resulting ``BDB_INCLUDE_PATH``/``BDB_LIB_PATH`` to the kit.
+6. Open ``triangles-qt.pro`` in Qt Creator.  In **Projects → Build
+   Settings**, add the following *Additional arguments* to **qmake** as
+   required:
+
+   ::
+
+        OPENSSL_INCLUDE_PATH="C:/libressl/include" \
+        OPENSSL_LIB_PATH="C:/libressl/lib" \
+        BDB_LIB_SUFFIX="-4.8"
+
+7. Build the project (``Ctrl`` + ``B``).  Qt Creator will run ``qmake``
+   and ``mingw32-make`` using the configured kit and output a
+   ``triangles-qt.exe`` inside the build directory.  Run or debug the
+   wallet directly from Qt Creator, or use the **Deploy** step to execute
+   ``windeployqt`` and stage the required Qt/MinGW runtime DLLs.
+
+These instructions avoid the old dependency archive and ensure all
+libraries are sourced from actively maintained distributions.
 
 
 Mac OS X
