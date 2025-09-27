@@ -1,4 +1,4 @@
-Triangles (TRI) "Black Pharao" Version 4.2.1.0 Release, 
+Cryptographic Triangles (TRI) "" Version 5.0.0.0 Release, 
 
 Triangles is a cool new crypto currency that features TOR implementation and secure messaging.
 
@@ -6,7 +6,7 @@ This wallet supports the staking=0 option in the triangles.conf file to disable 
 
 ## Tor v3 support
 
-Version 4.2.1.1 (protocol 70205) adds first-class support for Tor v3 onion services. Nodes now
+Version 5.0.0.0 (protocol 70205) adds first-class support for Tor v3 onion services. Nodes now
 preserve the full 56 character onion hostname when exchanging addresses so they can establish
 SOCKS5 connections through a Tor proxy without falling back to deprecated v2 services.
 
