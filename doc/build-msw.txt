@@ -65,9 +65,11 @@ link against the pre-1.1 OpenSSL API because the wallet sources rely on
 deprecated structures that were removed in OpenSSL 1.1/3.0.  There are
 two supported options:
 
-* **LibreSSL 3.7+ (recommended)** – API-compatible with OpenSSL 1.0.2u
+* **LibreSSL 3.7.x (recommended)** – API-compatible with OpenSSL 1.0.2u
   and readily available via the official Windows installers at
-  https://www.libressl.org/.
+  https://www.libressl.org/.  LibreSSL 4.x makes EVP_CIPHER_CTX opaque,
+  which breaks the Tor AES shim shipped with this tree; stick to the 3.7
+  series until the wallet sources are updated for the OpenSSL 1.1 API.
 * **OpenSSL 1.0.2u** – the final 1.0.x release; archived binaries are
   still mirrored at https://wiki.openssl.org/index.php/Binaries.
 
@@ -87,7 +89,8 @@ Summary of versions verified on Windows 11 (MSYS2 2024-07 snapshot):
     Qt              5.15.2 (MinGW 64-bit)
     Boost           1.83 (MSYS2 package)
     Berkeley DB     5.3.28 (MSYS2) or 4.8.30.NC (manual build)
-    OpenSSL         1.0.2u or LibreSSL 3.7.3
+    OpenSSL         1.0.2u or LibreSSL 3.7.3 (LibreSSL 4.x currently fails
+                    to compile)
     miniupnpc       2.2.6 (MSYS2)
     libevent        2.1.12 (MSYS2)
     qrencode        4.1.1 (MSYS2)

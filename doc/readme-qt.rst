@@ -64,10 +64,12 @@ are summarised here for quick reference inside Qt Creator.
    * ``C:\msys64\mingw64\bin\g++.exe`` and ``gdb.exe`` from the MSYS2
      MinGW toolchain
 
-4. Obtain either LibreSSL 3.7+ or OpenSSL 1.0.2u for Windows.  Add its
+4. Obtain either LibreSSL 3.7.x or OpenSSL 1.0.2u for Windows.  Add its
    ``bin`` directory to the kit's PATH (or set
    ``OPENSSL_INCLUDE_PATH``/``OPENSSL_LIB_PATH`` environment variables)
-   so that qmake can discover the headers and libraries.
+   so that qmake can discover the headers and libraries.  LibreSSL 4.x
+   currently fails to compile because the bundled Tor AES shim still
+   targets the pre-1.1 OpenSSL API.
 5. (Optional) If you require Berkeley DB 4.8 for wallet compatibility,
    build it following the instructions in ``doc/build-msw.txt`` and add the
    resulting ``BDB_INCLUDE_PATH``/``BDB_LIB_PATH`` to the kit.

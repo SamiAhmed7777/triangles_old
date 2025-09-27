@@ -101,9 +101,12 @@ Recent verification builds on Debian 12/Ubuntu 24.04 (GCC 13, Boost 1.83,
 Berkeley DB 5.3, miniupnpc 2.2.6) succeed until the OpenSSL link step.  The
 current code base expects the pre-1.1 OpenSSL API (direct access to EVP_CIPHER
 and DH structs) and therefore fails to compile with OpenSSL 3.x.  Building
-against OpenSSL 1.0.2u or LibreSSL 3.7 resolves the issue; when using a custom
-OpenSSL install, export OPENSSL_INCLUDE_PATH and OPENSSL_LIB_PATH before
-invoking make.
+against OpenSSL 1.0.2u works as before.  LibreSSL 3.7.x remains source-
+compatible with the legacy API and can be used by exporting
+OPENSSL_INCLUDE_PATH and OPENSSL_LIB_PATH before invoking make.  Testing with
+LibreSSL 4.1.0 shows the Tor AES shim fails to build because EVP_CIPHER_CTX is
+opaque in that release; until the code is updated to the OpenSSL 1.1-style API,
+stick to LibreSSL 3.7.x or the OpenSSL 1.0.x series.
 
 
 miniupnpc
