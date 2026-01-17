@@ -1,0 +1,16 @@
+{
+	"name": "Triangles Legacy Environment",
+	"build": {
+		"dockerfile": "../Dockerfile",
+		"context": ".."
+	},
+	"customizations": {
+		"vscode": {
+			"extensions": [
+				"ms-vscode.cpptools"
+			]
+		}
+	},
+	"remoteUser": "root",
+	"postCreateCommand": "cd src && make -f makefile.unix"
+}

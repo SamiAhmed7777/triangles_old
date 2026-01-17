@@ -92,6 +92,19 @@ To avoid dependency issues (especially with newer OpenSSL or BDB versions), you 
     docker run -v $(pwd)/data:/root/.triangles triangles-node
     ```
 
+### Developing with Visual Studio Code
+This project includes configuration for VS Code **Dev Containers**. This allows you to open the project in VS Code and automatically have a fully configured development environment (Ubuntu 18.04 with all dependencies installed) without cluttering your host system.
+
+1.  Install [Docker Desktop](https://www.docker.com/products/docker-desktop) and [Visual Studio Code](https://code.visualstudio.com/).
+2.  Install the [Dev Containers extension](https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-containers) in VS Code.
+3.  Open this folder in VS Code.
+4.  You should see a prompt: "Reopen in Container". Click it. (Or press F1 and run `Dev Containers: Reopen in Container`).
+5.  VS Code will build the Docker image and start the container.
+6.  Once ready, you can:
+    *   **Build**: Run the "Build Trianglesd" task (Terminal -> Run Task...).
+    *   **Debug**: Press F5 to start debugging `trianglesd` with GDB.
+    *   **Edit**: IntelliSense is configured for the C++ code.
+
 ## 5. Difficulty & Staking
 Since the chain has been stuck, the difficulty might be high relative to the current hash power (staking power).
 *   **PoS**: Coin age accumulates. This effectively lowers the difficulty for finding a block. Old wallets with coins should easily mint a block once they connect.
