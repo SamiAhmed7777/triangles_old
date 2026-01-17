@@ -14,6 +14,10 @@
 
 #ifdef WIN32
 #include <string.h>
+#else
+#include <sys/types.h>
+#include <sys/wait.h>
+#include <unistd.h>
 #endif
 
 #ifdef USE_UPNP
@@ -26,9 +30,9 @@
 using namespace std;
 using namespace boost;
 
-extern "C" {
-int tor_main(int argc, char *argv[]);
-}
+// extern "C" {
+// int tor_main(int argc, char *argv[]);
+// }
 
 static const int MAX_OUTBOUND_CONNECTIONS = 16;
 
@@ -1933,58 +1937,111 @@ void static Discover()
 
 }
 
+// static void run_tor() {
+//     printf("Onion thread started.\n");
+
+//     std::string logDecl = "notice file " + GetDataDir().string() + "/tor/tor.log";
+//     char *argvLogDecl = (char*) logDecl.c_str();
+
+//     char* argv[] = {
+//         "tor",
+//         "--hush",
+//         "--Log",
+//         argvLogDecl
+//     };
+
+//     tor_main(4, argv);
+// }
+
+
 static void run_tor() {
-    printf("Onion thread started.\n");
+    printf("Tor thread started.\n");
 
-    std::string logDecl = "notice file " + GetDataDir().string() + "/tor/tor.log";
-    char *argvLogDecl = (char*) logDecl.c_str();
+    filesystem::path tor_dir = GetDataDir() / "tor";
+    filesystem::create_directory(tor_dir);
+    filesystem::path log_file = tor_dir / "tor.log";
+    filesystem::path torrc_file = tor_dir / "torrc";
+    filesystem::path data_dir = GetDataDir() / "onion"; // Legacy path usage
+    filesystem::create_directory(data_dir);
 
+    // Create a basic torrc if it doesn't exist
+    if (!filesystem::exists(torrc_file)) {
+        ofstream torrc(torrc_file.string().c_str());
+        torrc << "DataDirectory " << data_dir.string() << "\n";
+        torrc << "Log notice file " << log_file.string() << "\n";
+        torrc << "HashedControlPassword 16:9B5532296DC2F2B2222E58C363C079D93AC773D55C7795D62934D279E7\n"; // password: "password"
+        torrc << "ControlPort 9051\n";
+        torrc << "SocksPort 9050\n";
+        torrc << "HiddenServiceDir " << data_dir.string() << "/service\n";
+        torrc << "HiddenServiceVersion 3\n";
+        torrc << "HiddenServicePort 19099 127.0.0.1:24112\n";
+        torrc.close();
+    }
+
+    // Path to the bundled binary
+    // Assuming the binary is in the same directory as the executable or in src/tor_embedded
+    // For this implementation, we assume 'tor_embedded' copied it to the src directory or similar.
+    // However, the makefile copied it to src/tor_embedded.
+    // Let's assume we run from the src directory or installed location.
+
+    std::string tor_bin = "tor_embedded"; // Name of binary copied by makefile
+    if (!filesystem::exists(tor_bin)) {
+        // Fallback to searching in current dir or system path
+        if (filesystem::exists("./tor_embedded")) {
+            tor_bin = "./tor_embedded";
+        } else {
+            tor_bin = "tor"; // Try system tor
+        }
+    }
+
+    printf("Executing Tor binary: %s\n", tor_bin.c_str());
+
+    // Arguments for execv
+    // argv[0] must be the name
     char* argv[] = {
-        "tor",
-        "--hush",
-        "--Log",
-        argvLogDecl
+        (char*)tor_bin.c_str(),
+        (char*)"-f",
+        (char*)torrc_file.string().c_str(),
+        NULL
     };
 
-    tor_main(4, argv);
+#ifndef WIN32
+    pid_t pid = fork();
+    if (pid < 0) {
+        printf("Error: Failed to fork for Tor process\n");
+    } else if (pid == 0) {
+        // Child process
+        execv(argv[0], argv);
+        // If execv returns, it failed
+        printf("Error: Failed to execute Tor binary: %s\n", strerror(errno));
+        exit(1);
+    } else {
+        // Parent process
+        // We don't waitpid here because we want Tor to run in background.
+        // But since this function is called from a thread, we can wait if we want to monitor it.
+        // However, standard behavior for 'StartTor' thread is usually to block or monitor.
+        int status;
+        waitpid(pid, &status, 0);
+        printf("Tor process exited with status %d\n", status);
+    }
+#else
+    printf("Windows Tor launching not fully implemented in this patch.\n");
+#endif
 }
 
-
 void StartTor(void* parg)
-
-
-
-
-
-
-
-
-
 {
     // Make this thread recognisable as the tor thread
     RenameThread("Triangles-onion");
     printf("Onion thread started.");
     try
-
-
-
     {
       run_tor();
-
-
-
-
-
     }
     catch (std::exception& e) {
       PrintException(&e, "StartTor()");
     }
-
-
-
     printf("Onion thread exited.");
-
-
 }
 
 void StartNode(void* parg)

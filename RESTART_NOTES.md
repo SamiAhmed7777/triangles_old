@@ -34,13 +34,32 @@ openssl ec -in checkpoint_priv.pem -pubout -outform DER | tail -c 65 | xxd -p -c
 ### Safe Storage
 Store `checkpoint_priv.pem` in a secure location (e.g., an encrypted USB drive). You will need this key to sign checkpoints using the `sendcheckpoint` RPC command or a custom tool.
 
-## 3. Network Bootstrap (Seeds)
-The `src/onionseed.h` file contains placeholders for Tor v3 hidden service addresses. You must:
-1.  Set up at least one (preferably more) stable node running Tor.
-2.  Configure Tor to create a hidden service (v3) pointing to the Triangles P2P port.
-3.  Get the `.onion` address from the Tor hidden service directory.
-4.  Update `src/onionseed.h` with these new addresses.
-5.  Recompile and distribute the wallet/daemon.
+## 3. Network Bootstrap (Seeds & Tor)
+### Tor Bundling
+The repository now includes a script to download and build a static **Tor** binary (v0.4.8.x or later) which supports modern Tor v3 onion services.
+
+**The build system automatically compiles and bundles Tor.** You do **NOT** need to install Tor separately, although `trianglesd` can still use a system Tor if configured with `-proxy`.
+
+When `trianglesd` starts, it will:
+1.  Check for the `tor_embedded` binary.
+2.  Launch it in the background.
+3.  Create a `torrc` in `<datadir>/tor/torrc` if missing.
+4.  Create a hidden service in `<datadir>/onion/service`.
+
+### How to Configure Tor v3
+1.  Start the wallet/daemon: `./trianglesd -daemon`.
+2.  Wait for it to start Tor.
+3.  Get your onion address:
+    ```bash
+    cat ~/.triangles/onion/service/hostname
+    ```
+4.  **Important**: The wallet needs to know its own onion address to advertise it. The updated code attempts to read this automatically.
+
+### Updating Seed Nodes
+1.  Run a stable node as above.
+2.  Get the onion address.
+3.  Update `src/onionseed.h` with this address.
+4.  Recompile and distribute the wallet/daemon.
 
 ## 4. Compilation & Dependencies
 The codebase uses older C++ standards and libraries (Boost, OpenSSL 1.x, Berkeley DB 4.8).
@@ -53,9 +72,13 @@ The codebase uses older C++ standards and libraries (Boost, OpenSSL 1.x, Berkele
     *   `libdb4.8-dev` and `libdb4.8++-dev` (Bitcoin PPA often has these)
     *   `libevent-dev`
     *   `libminiupnpc-dev` (optional)
+    *   `wget` (for downloading Tor)
 
-**Build Issues:**
-If building on a modern system, you may encounter errors related to `openssl` (e.g., missing EC functions if headers differ) or `boost` (placeholders). You might need to patch `src/makefile.unix` to point to correct include directories.
+**Build Instructions:**
+1.  `cd src`
+2.  `make -f makefile.unix`
+
+This will automatically download and build Tor, then build `trianglesd`.
 
 ## 5. Difficulty & Staking
 Since the chain has been stuck, the difficulty might be high relative to the current hash power (staking power).
@@ -64,7 +87,7 @@ Since the chain has been stuck, the difficulty might be high relative to the cur
 
 ## 6. Next Steps
 1.  **Set up environment**: Get a VM with Ubuntu 16.04 or 18.04.
-2.  **Install deps**: `sudo apt-get install build-essential libtool autotools-dev automake pkg-config libssl-dev libevent-dev bsdmainutils libboost-system-dev libboost-filesystem-dev libboost-chrono-dev libboost-program-options-dev libboost-test-dev libboost-thread-dev` + Berkeley DB 4.8.
+2.  **Install deps**: `sudo apt-get install build-essential libtool autotools-dev automake pkg-config libssl-dev libevent-dev bsdmainutils libboost-system-dev libboost-filesystem-dev libboost-chrono-dev libboost-program-options-dev libboost-test-dev libboost-thread-dev wget` + Berkeley DB 4.8.
 3.  **Compile**: `cd src && make -f makefile.unix`.
 4.  **Run**: `./trianglesd -daemon`.
 5.  **Connect**: Since seeds are empty, you need to manually connect nodes using `addnode=<ip>` in `triangles.conf` until you update the source code with new onion seeds.
