@@ -105,6 +105,35 @@ This project includes configuration for VS Code **Dev Containers**. This allows 
     *   **Debug**: Press F5 to start debugging `trianglesd` with GDB.
     *   **Edit**: IntelliSense is configured for the C++ code.
 
+### Building for Windows
+Building a Windows `.exe` requires a "cross-compilation" toolchain (Mingw-w64) and Windows versions of all libraries (Qt, Boost, OpenSSL, Berkeley DB).
+
+The easiest way to do this is using **MXE (M Cross Environment)** via Docker.
+
+1.  **Create a Dockerfile.mxe** (or use the one provided in `contrib/`):
+    ```dockerfile
+    # Example using a community MXE image
+    FROM kylemanna/mxe:latest
+
+    # Install deps
+    RUN apt-get update && apt-get install -y git wget
+
+    # Copy source
+    COPY . /src
+    WORKDIR /src
+
+    # Build
+    RUN qmake-qt5 triangles-qt.pro
+    RUN make
+    ```
+2.  **Run the build**:
+    ```bash
+    docker build -f contrib/Dockerfile.mxe -t triangles-win .
+    docker run -v $(pwd)/release:/output triangles-win cp release/triangles-qt.exe /output/
+    ```
+
+*Note: The repository contains `win32_mxe_crosscompile_triangles-qt.pro` which assumes a specific path `/opt/mxe`. You may need to adjust paths depending on your MXE installation.*
+
 ## 5. Difficulty & Staking
 Since the chain has been stuck, the difficulty might be high relative to the current hash power (staking power).
 *   **PoS**: Coin age accumulates. This effectively lowers the difficulty for finding a block. Old wallets with coins should easily mint a block once they connect.

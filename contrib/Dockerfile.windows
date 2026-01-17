@@ -1,0 +1,46 @@
+# Dockerfile for building Triangles-Qt for Windows using MXE
+# Note: This requires a base image with MXE installed.
+# 'cdated/mxe' is a popular one, or you can build your own.
+
+FROM cdated/mxe:latest
+
+ENV PATH="/usr/lib/mxe/usr/bin:${PATH}"
+
+# Install dependencies if missing from base
+RUN apt-get update && apt-get install -y \
+    wget \
+    git \
+    autopoint \
+    bison \
+    flex \
+    gperf \
+    libtool \
+    libtool-bin \
+    ruby \
+    scons \
+    unzip \
+    p7zip-full
+
+# Copy source code
+WORKDIR /app
+COPY . .
+
+# Download and bundle Tor (Windows static build)
+# Note: The linux script won't work here. We need a windows tor.exe.
+# This step is simplified; you might need to download the Tor Expert Bundle.
+RUN wget https://archive.torproject.org/tor-package-archive/torbrowser/13.0.10/tor-win32-0.4.8.10.zip && \
+    unzip tor-win32-0.4.8.10.zip && \
+    mv Tor/tor.exe src/tor_embedded.exe
+
+# Configure Build
+# We use the existing win32_mxe profile but might need to override paths
+RUN qmake-qt5 \
+    "USE_UPNP=1" \
+    "USE_IPV6=1" \
+    "USE_QRCODE=0" \
+    win32_mxe_crosscompile_triangles-qt.pro
+
+# Build
+RUN make -j$(nproc)
+
+# Output is in release/triangles-qt.exe
