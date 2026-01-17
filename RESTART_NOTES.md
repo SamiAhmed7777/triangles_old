@@ -80,6 +80,18 @@ The codebase uses older C++ standards and libraries (Boost, OpenSSL 1.x, Berkele
 
 This will automatically download and build Tor, then build `trianglesd`.
 
+### Docker Build (Recommended)
+To avoid dependency issues (especially with newer OpenSSL or BDB versions), you can use the provided `Dockerfile`.
+
+1.  Build the image:
+    ```bash
+    docker build -t triangles-node .
+    ```
+2.  Run the node:
+    ```bash
+    docker run -v $(pwd)/data:/root/.triangles triangles-node
+    ```
+
 ## 5. Difficulty & Staking
 Since the chain has been stuck, the difficulty might be high relative to the current hash power (staking power).
 *   **PoS**: Coin age accumulates. This effectively lowers the difficulty for finding a block. Old wallets with coins should easily mint a block once they connect.
