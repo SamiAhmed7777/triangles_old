@@ -4,6 +4,7 @@
 
 // hidden service seeds
 // Replace the placeholder Tor v3 onion below with live seed nodes when deploying.
+// TODO: Generate new Tor v3 hidden services and place their addresses here.
 static const char *strMainNetOnionSeed[][1] = {
     {"abcdefghijklmnopqrstuvwxyz234567abcdefghijklmnopqrstuvwx.onion"},
     {NULL}
